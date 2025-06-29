@@ -3,7 +3,7 @@
   await new Promise(r => setTimeout(r, 500)); // attendre le chargement
 
   const a = [...document.querySelectorAll('a')]
-    .find(x => /file-.*\.txt$/.test(x.id));
+    .find(x => x.href && /\.txt$/.test(x.href));
 
   if (a) {
     const res = await fetch(a.href);
